@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Van Candidates</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    padding: 0 0 3rem;
+  }
+
+  header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 1.5rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .controls input[type="text"] {
+    flex: 1 1 220px;
+    padding: .55rem .85rem;
+    border: none;
+    border-radius: 6px;
+    font-size: .9rem;
+    background: #2d2d4a;
+    color: #fff;
+    outline: none;
+  }
+  .controls input::placeholder { color: #8888aa; }
+  .controls input:focus { box-shadow: 0 0 0 2px #5c6bc0; }
+
+  .controls select {
+    padding: .55rem .75rem;
+    border: none;
+    border-radius: 6px;
+    font-size: .9rem;
+    background: #2d2d4a;
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+  }
+  .controls select:focus { box-shadow: 0 0 0 2px #5c6bc0; }
+
+  .summary {
+    padding: .6rem 2rem;
+    background: #e8eaf6;
+    font-size: .85rem;
+    color: #444;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+    padding: 1.5rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    display: flex;
+    flex-direction: column;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+  }
+
+  .card-img {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    background: #ddd;
+  }
+
+  .card-body {
+    padding: 1rem 1.15rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .card-price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2e7d32;
+  }
+
+  .specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .35rem .75rem;
+    font-size: .85rem;
+  }
+  .specs dt { color: #888; }
+  .specs dd { font-weight: 600; }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: auto;
+  }
+
+  .badge {
+    font-size: .7rem;
+    font-weight: 600;
+    padding: .25rem .55rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .badge-score {
+    background: #e8eaf6;
+    color: #283593;
+  }
+  .badge-note {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .badge-warn {
+    background: #fff3e0;
+    color: #e65100;
+  }
+
+  .card-link {
+    display: block;
+    text-align: center;
+    padding: .7rem;
+    font-size: .85rem;
+    font-weight: 600;
+    color: #fff;
+    background: #1a1a2e;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .card-link:hover { background: #5c6bc0; }
+
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #888;
+    font-size: 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Van Candidates</h1>
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search make, model, VIN, notes...">
+    <select id="makeFilter">
+      <option value="all">All Makes</option>
+      <option value="Chevrolet">Chevrolet</option>
+      <option value="Ford">Ford</option>
+    </select>
+    <select id="sortBy">
+      <option value="score">Sort: Best Match</option>
+      <option value="price-asc">Sort: Price Low-High</option>
+      <option value="price-desc">Sort: Price High-Low</option>
+      <option value="mileage">Sort: Mileage Low-High</option>
+      <option value="year">Sort: Year Newest</option>
+    </select>
+  </div>
+</header>
+
+<div class="summary" id="summary"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const DATA = [
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2017,
+    "Price": 17298, "Mileage": 106295, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1GAWGFFG1H1339426",
+    "Image": "https://images.autotrader.com/hn/c/10d4acfb8bad4e6184abb5fdc1e0358f.jpg",
+    "Score": 250, "Notes": "Good Engine Size (6.0L) | VIN Confirmed L96",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=768129248"
+  },
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2019,
+    "Price": 17759, "Mileage": 88086, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1GCWGAFG8K1354801",
+    "Image": "https://images.autotrader.com/hn/c/695b4dbd99084dbda6e1182a11572352.jpg",
+    "Score": 250, "Notes": "Good Engine Size (6.0L) | VIN Confirmed L96",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=767949212"
+  },
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2017,
+    "Price": 18789, "Mileage": 50836, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "BLACK",
+    "VIN": "1GCWGAFG2H1246795",
+    "Image": "https://images.autotrader.com/hn/c/a5ab1ed5a6704cbfb0ee1cec37a750ca.jpg",
+    "Score": 250, "Notes": "Good Engine Size (6.0L) | VIN Confirmed L96",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=758789428"
+  },
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2016,
+    "Price": 18981, "Mileage": 77353, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1GAWGEFG4G1328882",
+    "Image": "https://images.autotrader.com/hn/c/a98eac1748ee471ea2feab07df8cb529.jpg",
+    "Score": 250, "Notes": "Good Engine Size (6.0L) | VIN Confirmed L96",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=771042344"
+  },
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2014,
+    "Price": 21995, "Mileage": 38013, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1GAWGPFG3E1176697",
+    "Image": "https://images.autotrader.com/hn/c/362d080b38b648d1976b0ec8e3579d06.jpg",
+    "Score": 250, "Notes": "Good Engine Size (6.0L) | VIN Confirmed L96",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=761500136"
+  },
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2017,
+    "Price": 21995, "Mileage": 69195, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "SILVER",
+    "VIN": "1GNWGEFG0H1264288",
+    "Image": "https://images.autotrader.com/hn/c/1525ce6aa9494260a1ee0fc730e129f1.jpg",
+    "Score": 250, "Notes": "Good Engine Size (6.0L) | VIN Confirmed L96",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=765750889"
+  },
+  {
+    "Make": "Ford", "Model": "Transit 150", "Year": 2018,
+    "Price": 18500, "Mileage": 91170, "Engine_Liters": 3.7,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1FTYE2CM9JKA96151",
+    "Image": "https://assets.cai-media-management.com/ps-vehicle-media/fdd55e43-b886-4672-bc02-a663f741eb92.jpeg",
+    "Score": 200, "Notes": "Good Engine Size (3.7L) | VIN Confirmed 3.7L",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=756814255"
+  },
+  {
+    "Make": "Ford", "Model": "Transit 150", "Year": 2019,
+    "Price": 19995, "Mileage": 88796, "Engine_Liters": 3.7,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1FDZK1CM7KKB72972",
+    "Image": "https://images.autotrader.com/hn/c/f74b56ca604d4ed3a9554206c233c58b.jpg",
+    "Score": 200, "Notes": "Good Engine Size (3.7L) | VIN Confirmed 3.7L",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=764230535"
+  },
+  {
+    "Make": "Ford", "Model": "Transit 150", "Year": 2017,
+    "Price": 19999, "Mileage": 8388, "Engine_Liters": 3.7,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1FTYE1CM3HKB46143",
+    "Image": "https://images.autotrader.com/hn/c/1bff3ece3051406589395745cada2058.jpg",
+    "Score": 200, "Notes": "Good Engine Size (3.7L) | VIN Confirmed 3.7L",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=752401561"
+  },
+  {
+    "Make": "Ford", "Model": "Transit 150", "Year": 2016,
+    "Price": 21798, "Mileage": 43304, "Engine_Liters": 3.7,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1FTYE1ZM6GKB03633",
+    "Image": "https://images.autotrader.com/hn/c/01472c1a12c7406eadbe13e0d8da9aa1.jpg",
+    "Score": 200, "Notes": "Good Engine Size (3.7L) | VIN Confirmed 3.7L",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=765714536"
+  },
+  {
+    "Make": "Ford", "Model": "Transit 150", "Year": 2016,
+    "Price": 21988, "Mileage": 63863, "Engine_Liters": 3.7,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1FMZK1ZM0GKB41867",
+    "Image": "https://images.autotrader.com/hn/c/ce8c9bd03443449cab038d16d8b35723.jpg",
+    "Score": 200, "Notes": "Good Engine Size (3.7L) | VIN Confirmed 3.7L",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=769258225"
+  },
+  {
+    "Make": "Chevrolet", "Model": "Express 2500", "Year": 2014,
+    "Price": 9323, "Mileage": 103546, "Engine_Liters": 6.0,
+    "Transmission": "6-Speed Automatic", "Color": "WHITE",
+    "VIN": "1GCWGFCB2E1113701",
+    "Image": "https://images.autotrader.com/hn/c/e312af6972e84050b3d7f8fb05c5d07e.jpg",
+    "Score": 150, "Notes": "Good Engine Size (6.0L)",
+    "Link": "https://www.autotrader.com/cars-for-sale/vehicledetails.xhtml?listingId=767381265"
+  }
+];
+
+const fmt = new Intl.NumberFormat('en-US');
+const fmtPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const make = document.getElementById('makeFilter').value;
+  const sort = document.getElementById('sortBy').value;
+
+  let items = DATA.filter(v => {
+    if (make !== 'all' && v.Make !== make) return false;
+    if (q) {
+      const hay = `${v.Make} ${v.Model} ${v.Year} ${v.VIN} ${v.Notes} ${v.Color}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const sorters = {
+    'score':      (a, b) => b.Score - a.Score || a.Price - b.Price,
+    'price-asc':  (a, b) => a.Price - b.Price,
+    'price-desc': (a, b) => b.Price - a.Price,
+    'mileage':    (a, b) => a.Mileage - b.Mileage,
+    'year':       (a, b) => b.Year - a.Year || a.Price - b.Price
+  };
+  items.sort(sorters[sort] || sorters['score']);
+
+  document.getElementById('summary').textContent =
+    `Showing ${items.length} of ${DATA.length} candidates`;
+
+  const grid = document.getElementById('grid');
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty">No candidates match your filters.</div>';
+    return;
+  }
+
+  grid.innerHTML = items.map(v => {
+    const noteParts = v.Notes ? v.Notes.split(' | ') : [];
+    const badges = noteParts.map(n => {
+      const cls = n.toLowerCase().includes('warning') ? 'badge-warn' : 'badge-note';
+      return `<span class="badge ${cls}">${n}</span>`;
+    }).join('');
+
+    return `
+    <div class="card">
+      <img class="card-img" src="${v.Image}" alt="${v.Year} ${v.Make} ${v.Model}" loading="lazy"
+           onerror="this.style.display='none'">
+      <div class="card-body">
+        <div class="card-title">${v.Year} ${v.Make} ${v.Model}</div>
+        <div class="card-price">${fmtPrice.format(v.Price)}</div>
+        <dl class="specs">
+          <dt>Mileage</dt><dd>${fmt.format(v.Mileage)} mi</dd>
+          <dt>Engine</dt><dd>${v.Engine_Liters}L</dd>
+          <dt>Trans</dt><dd>${v.Transmission}</dd>
+          <dt>Color</dt><dd>${v.Color}</dd>
+          <dt>VIN</dt><dd style="font-size:.78rem">${v.VIN}</dd>
+          <dt>Score</dt><dd>${v.Score}</dd>
+        </dl>
+        <div class="badge-row">
+          ${badges}
+        </div>
+      </div>
+      <a class="card-link" href="${v.Link}" target="_blank" rel="noopener">View on AutoTrader</a>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('makeFilter').addEventListener('change', render);
+document.getElementById('sortBy').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>
